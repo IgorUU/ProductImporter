@@ -6,6 +6,7 @@ use Drupal\commerce_price\Price;
 use Drupal\commerce_product\Entity\Product;
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\commerce_store\Entity\Store;
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\file\Entity\File;
@@ -62,25 +63,36 @@ class ProductImportForm extends FormBase {
         $i = 1;
 
         foreach($data as $item) {
-            $product["product".$i] = Product::create([
+            $nesto = file_get_contents($item['Image']);
+            $slika = file_save_data($nesto, 'public://sample.png', FileSystemInterface::EXISTS_RENAME);
+
+            $product[$i] = Product::create([
                 'uid' => $i,
                 'type' => 'default',
                 'title' => $item['Title'],
                 'body' => $item['Body']
             ]);
-            $variation["variation".$i] = ProductVariation::create([
+            $variation[$i] = ProductVariation::create([
                 'type' => 'default',
                 'sku' => $item['SKU'],
                 'price' => new Price($item['Price'], 'EUR'),
-                'field_stock' => $item['Lager']
+                'field_stock' => $item['Lager'],
+                'field_image' => [
+                    'target_id' => $slika->id(),
+                    'alt' => 'Sample',
+                    'title' => 'Sample file'
+                ]
             ]);
 
-            $product["product".$i]->save();
+            $product[$i]->save();
+            $variation[$i]->save();
             $i++;
         }
-        extract($product);          //Zbog ovoga mogu koristiti $product1, $product2, itd.
-        extract($variation);
-
+        
+        $product[1]->addVariation($variation[1]);
+        $product[1]->save();
+        dsm($product[1]);
+        dsm($variation[1]);
     }
 
     public static function csvtoarray($filename='', $delimiter) {
