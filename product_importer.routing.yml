@@ -1,0 +1,7 @@
+product_importer.formes:
+  path: '/formes'
+  defaults:
+    _form: 'Drupal\product_importer\Form\ProductImportForm'
+    _title: 'Import'
+  requirements:
+    _permission: 'Import form'
