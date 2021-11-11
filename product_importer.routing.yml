@@ -1,5 +1,5 @@
-product_importer.formes:
-  path: '/formes'
+product_importer.dodaj:
+  path: '/dodaj'
   defaults:
     _form: 'Drupal\product_importer\Form\ProductImportForm'
     _title: 'Import'

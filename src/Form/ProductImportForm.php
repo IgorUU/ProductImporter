@@ -35,9 +35,7 @@ class ProductImportForm extends FormBase {
             '#upload_validators' => $validators,
         ];
 
-        $form['actions']['#type'] = 'actions';
-
-        $form['actions']['submit'] = array(
+        $form['submit'] = array(
         '#type' => 'submit',
         '#value' => $this->t('Save'),
         '#button_type' => 'primary',
@@ -70,7 +68,7 @@ class ProductImportForm extends FormBase {
                 'uid' => $i,
                 'type' => 'default',
                 'title' => $item['Title'],
-                'body' => $item['Body']
+                'body' => $item['Body'],
             ]);
             $variation[$i] = ProductVariation::create([
                 'type' => 'default',
@@ -86,13 +84,14 @@ class ProductImportForm extends FormBase {
 
             $product[$i]->save();
             $variation[$i]->save();
+            $product[$i]->addVariation($variation[$i]);
+            $product[$i]->save();
+
             $i++;
         }
-        
-        $product[1]->addVariation($variation[1]);
-        $product[1]->save();
-        dsm($product[1]);
-        dsm($variation[1]);
+
+        // dsm($product[1]);
+        // dsm($variation[1]);
     }
 
     public static function csvtoarray($filename='', $delimiter) {
