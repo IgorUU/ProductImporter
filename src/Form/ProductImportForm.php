@@ -4,12 +4,14 @@ namespace Drupal\product_importer\Form;
 
 use Drupal\commerce_price\Price;
 use Drupal\commerce_product\Entity\Product;
+use Drupal\commerce_product\Entity\ProductAttributeValue;
 use Drupal\commerce_product\Entity\ProductVariation;
 use Drupal\commerce_store\Entity\Store;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\file\Entity\File;
+use Drupal\taxonomy\Entity\Term;
 
 class ProductImportForm extends FormBase {
 
@@ -55,8 +57,6 @@ class ProductImportForm extends FormBase {
 
         $data = $this->csvtoarray($file->getFileUri(), ';');
 
-        $store = Store::load('1');
-
         //-----------------         KREIRANJE PROIZVODA         ------------------------
         $i = 1;
 
@@ -64,11 +64,55 @@ class ProductImportForm extends FormBase {
             $nesto = file_get_contents($item['Image']);
             $slika = file_save_data($nesto, 'public://sample.png', FileSystemInterface::EXISTS_RENAME);
 
+            //-----------        Loading term entity and creating it if it doesn't exist        -----------
+
+            $term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties(['name' => $item['Category']]);
+            if(empty($term)) {
+                $term = Term::create([
+                    'vid' => 'categories',
+                    'name' => $item['Category'],
+                ])->save();
+                $term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties(['name' => $item['Category']]);
+                $term = reset($term);
+            } else {
+                $term = reset($term);
+            }
+
+            dsm($term);
+
+            $color = \Drupal::entityTypeManager()->getStorage('commerce_product_attribute_value')->loadByProperties(['name' => $item['Color']]);
+            if(empty($color)) {
+                $color = ProductAttributeValue::create([
+                    'attribute' => 'color',
+                    'name' => $item['Color']
+                ])->save();
+                $color = \Drupal::entityTypeManager()->getStorage('commerce_product_attribute_value')->loadByProperties(['name' => $item['Color']]);
+                $color = reset($color);
+            } else {
+                $color = reset($color);
+            }
+
+            $size = \Drupal::entityTypeManager()->getStorage('commerce_product_attribute_value')->loadByProperties(['name' => $item['Size']]);
+            if(empty($size)) {
+                $size = ProductAttributeValue::create([
+                    'attribute' => 'size',
+                    'name' => $item['Size']
+                ])->save();
+                $size = \Drupal::entityTypeManager()->getStorage('commerce_product_attribute_value')->loadByProperties(['name' => $item['Size']]);
+                $size = reset($size);
+            } else {
+                $size = reset($size);
+            }
+
+            $gender = \Drupal::entityTypeManager()->getStorage('commerce_product_attribute_value')->loadByProperties(['name' => $item['Gender']]);
+            $gender = reset($gender);
+
             $product[$i] = Product::create([
                 'uid' => $i,
                 'type' => 'default',
                 'title' => $item['Title'],
                 'body' => $item['Body'],
+                'field_categories' => $term
             ]);
             $variation[$i] = ProductVariation::create([
                 'type' => 'default',
@@ -79,7 +123,10 @@ class ProductImportForm extends FormBase {
                     'target_id' => $slika->id(),
                     'alt' => 'Sample',
                     'title' => 'Sample file'
-                ]
+                ],
+                'attribute_color' => $color,
+                'attribute_gender' => $gender,
+                'attribute_size' => $size
             ]);
 
             $product[$i]->save();
@@ -94,7 +141,7 @@ class ProductImportForm extends FormBase {
         // dsm($variation[1]);
     }
 
-    public static function csvtoarray($filename='', $delimiter) {
+    public static function csvtoarray($filename, $delimiter) {
         if(!file_exists($filename) || !is_readable($filename)) return false;
         $header = NULL;
         $data = [];
