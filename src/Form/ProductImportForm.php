@@ -117,6 +117,7 @@ class ProductImportForm extends FormBase {
             $product = Product::create([
                 'uid' => $i,
                 'type' => 'default',
+                'stores' => 1,
                 'title' => $item['Title'],
                 'body' => $item['Body'],
                 'field_categories' => $term
@@ -125,6 +126,7 @@ class ProductImportForm extends FormBase {
                 'type' => 'default',
                 'sku' => $item['SKU'],
                 'price' => new Price($item['Price'], 'EUR'),
+                'field_sale_price' => new Price('15.00', 'EUR'),
                 'field_stock' => $item['Lager'],
                 'field_image' => [
                     'target_id' => $slika->id(),

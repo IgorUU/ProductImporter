@@ -13,7 +13,9 @@ class OrderController {
     public function order($orderID)
     {
         // Loadovanje product varijacije
-        $productVariation = ProductVariation::load(160);
+        $productVariation = ProductVariation::load(172);
+        dsm($productVariation);
+
 
         // Loadovanje ordera sa prosleđenim ID-jem
         $order = Order::load($orderID);
