@@ -6,7 +6,6 @@ use Drupal\commerce_price\Price;
 use Drupal\commerce_product\Entity\Product;
 use Drupal\commerce_product\Entity\ProductAttributeValue;
 use Drupal\commerce_product\Entity\ProductVariation;
-use Drupal\commerce_store\Entity\Store;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -49,7 +48,11 @@ class ProductImportForm extends FormBase {
     {
         $csv_file = $form_state->getValue('import_csv');
 
-        $file = File::load($csv_file[0]);
+        // $id = \Drupal::entityTypeManager()->getStorage('file')
+        // ->loadByProperties(['filename' => 'nesto.csv']);
+        // dsm($id);
+
+        $file = File::load(reset($csv_file));
 
         $file->setPermanent();          //Da bih ga sačuvao u bazi mora biti setovan na permanent.
 
@@ -62,59 +65,63 @@ class ProductImportForm extends FormBase {
 
         foreach($data as $item) {
             $nesto = file_get_contents($item['Image']);
-            $slika = file_save_data($nesto, 'public://sample.png', FileSystemInterface::EXISTS_RENAME);
+            $slika =
+             file_save_data($nesto, 'public://'.pathinfo($item['Image'])['basename'], FileSystemInterface::EXISTS_RENAME);
 
             //-----------        Loading term entity and creating it if it doesn't exist        -----------
 
-            $term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties(['name' => $item['Category']]);
+            $term = \Drupal::entityTypeManager()
+            ->getStorage('taxonomy_term')
+            ->loadByProperties(['name' => $item['Category']]);
             if(empty($term)) {
                 $term = Term::create([
                     'vid' => 'categories',
                     'name' => $item['Category'],
-                ])->save();
-                $term = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties(['name' => $item['Category']]);
-                $term = reset($term);
+                ]);
+                    $term->save();
             } else {
                 $term = reset($term);
             }
 
-            dsm($term);
-
-            $color = \Drupal::entityTypeManager()->getStorage('commerce_product_attribute_value')->loadByProperties(['name' => $item['Color']]);
+            $color = \Drupal::entityTypeManager()
+            ->getStorage('commerce_product_attribute_value')
+            ->loadByProperties(['name' => $item['Color']]);
             if(empty($color)) {
                 $color = ProductAttributeValue::create([
                     'attribute' => 'color',
                     'name' => $item['Color']
-                ])->save();
-                $color = \Drupal::entityTypeManager()->getStorage('commerce_product_attribute_value')->loadByProperties(['name' => $item['Color']]);
-                $color = reset($color);
+                ]);
+                $color->save();
             } else {
                 $color = reset($color);
             }
 
-            $size = \Drupal::entityTypeManager()->getStorage('commerce_product_attribute_value')->loadByProperties(['name' => $item['Size']]);
+            $size = \Drupal::entityTypeManager()
+            ->getStorage('commerce_product_attribute_value')
+            ->loadByProperties(['name' => $item['Size']]);
             if(empty($size)) {
                 $size = ProductAttributeValue::create([
                     'attribute' => 'size',
                     'name' => $item['Size']
-                ])->save();
-                $size = \Drupal::entityTypeManager()->getStorage('commerce_product_attribute_value')->loadByProperties(['name' => $item['Size']]);
-                $size = reset($size);
+                ]);
+                $size->save();
             } else {
                 $size = reset($size);
             }
 
-            $gender = \Drupal::entityTypeManager()->getStorage('commerce_product_attribute_value')->loadByProperties(['name' => $item['Gender']]);
+            $gender = \Drupal::entityTypeManager()
+            ->getStorage('commerce_product_attribute_value')
+            ->loadByProperties(['name' => $item['Gender']]);
             $gender = reset($gender);
 
-            $product[$i] = Product::create([
+            $product = Product::create([
                 'uid' => $i,
                 'type' => 'default',
                 'title' => $item['Title'],
                 'body' => $item['Body'],
                 'field_categories' => $term
             ]);
-            $variation[$i] = ProductVariation::create([
+            $variation = ProductVariation::create([
                 'type' => 'default',
                 'sku' => $item['SKU'],
                 'price' => new Price($item['Price'], 'EUR'),
@@ -129,16 +136,12 @@ class ProductImportForm extends FormBase {
                 'attribute_size' => $size
             ]);
 
-            $product[$i]->save();
-            $variation[$i]->save();
-            $product[$i]->addVariation($variation[$i]);
-            $product[$i]->save();
+            $variation->save();
+            $product->addVariation($variation);
+            $product->save();
 
             $i++;
         }
-
-        // dsm($product[1]);
-        // dsm($variation[1]);
     }
 
     public static function csvtoarray($filename, $delimiter) {

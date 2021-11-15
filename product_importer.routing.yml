@@ -5,3 +5,11 @@ product_importer.dodaj:
     _title: 'Import'
   requirements:
     _permission: 'Import form'
+
+product_importer.order:
+  path: '/order/{orderID}'
+  defaults:
+    _controller: 'Drupal\product_importer\Controller\OrderController::order'
+    _title: 'Order'
+  requirements:
+    _permission: 'access content'
